@@ -1,10 +1,14 @@
 import requests
 import pandas as pd
 import json
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def fetch_events():
     # Your Ticketmaster API key
-    api_key = "ad8GbFvZQrIcPIxARQ1KO5oDJMMXs4ty"
+    api_key = os.getenv('API_KEY')
     
     # Base URL for Ticketmaster API
     url = 'https://app.ticketmaster.com/discovery/v2/events.json'
