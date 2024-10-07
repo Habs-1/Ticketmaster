@@ -1,5 +1,6 @@
 import requests
 import pandas as pd
+import json
 
 def fetch_events():
     # Your Ticketmaster API key
@@ -33,7 +34,27 @@ def fetch_events():
         
         # Get the JSON response
         data = response.json()
-        
+
+        ### RAW JSON TEST PRINTS
+       #print('###JSON PRETTY###')
+       #print(json.dumps(data, indent=4))
+       #print('###END JSON PRETTY###')
+        print(data.keys())
+        print('##JSON KEYS##')
+        if '_embedded' in data:
+            print(data['_embedded'].keys())
+            # Check the keys within each event
+            first_event = data['_embedded']['events'][0]
+            print(first_event.keys())
+        print('##first event##')
+        first_event = data['_embedded']['events'][0]
+        print(json.dumps(first_event, indent=4))
+        print('###Normalized###')
+        df_flattened = pd.json_normalize(data, sep='_')
+        print(df_flattened)
+        print(df_flattened.columns)
+        print('###END###')
+
         # Check if there are any events in the response
         if '_embedded' not in data or 'events' not in data['_embedded']:
             print("No more events found.")
@@ -53,6 +74,7 @@ def fetch_events():
         
         # Increment to the next page
         params['page'] += 1
+    
     
     return all_events
 
@@ -78,6 +100,7 @@ def events_to_dataframe(events):
                                            ])
     return df
 
+
 if __name__ == "__main__":
     # Fetch all events for the US with pagination
     events_data = fetch_events()
@@ -88,6 +111,7 @@ if __name__ == "__main__":
     # Display the first few rows of the DataFrame
     print(events_df.head())
     print(events_df)
+    
     
     # Optionally, save the DataFrame to a CSV file
 #    events_df.to_csv("us_events.csv", index=False)
