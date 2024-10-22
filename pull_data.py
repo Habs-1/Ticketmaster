@@ -4,11 +4,13 @@ import json
 import os
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
+from load_snowflake import load_snowflake
+from urllib.parse import quote_plus 
 
 load_dotenv()
 # Snowflake login from .env
 SNOWFLAKE_USER = os.getenv('SNOWFLAKE_USER')
-SNOWFLAKE_PASSWORD = os.getenv('SNOWFLAKE_PASSWORD')
+SNOWFLAKE_PASSWORD = quote_plus(os.getenv('SNOWFLAKE_PASSWORD'))  # Use urllib to parse special characters in PW
 SNOWFLAKE_ACCOUNT = os.getenv('SNOWFLAKE_ACCOUNT')  
 SNOWFLAKE_WAREHOUSE = os.getenv('SNOWFLAKE_WAREHOUSE')
 SNOWFLAKE_DATABASE = os.getenv('SNOWFLAKE_DATABASE')
@@ -27,9 +29,9 @@ def fetch_events():
     params = {
         'apikey': api_key,
         'countryCode': 'US',                      # Limit results to the US
-        'startDateTime': '2024-01-01T00:00:00Z',  # Start date
+        'startDateTime': '2024-12-01T00:00:00Z',  # Start date
         ### Deep paging issues over 1000 items, limiting to 1 month for now. will need to add batching
-        'endDateTime': '2024-01-31T23:59:59Z',    # End date
+        'endDateTime': '2024-12-31T23:59:59Z',    # End date
         'size': 200,                              # Max events per page
         'page': 0,                                # Start at page 0
         'sort': 'date,asc'                        # Sort by date ascending
@@ -48,26 +50,6 @@ def fetch_events():
         
         # Get the JSON response
         data = response.json()
-
-        ### RAW JSON TEST PRINTS
-       #print('###JSON PRETTY###')
-       #print(json.dumps(data, indent=4))
-       #print('###END JSON PRETTY###')
-        print(data.keys())
-        print('##JSON KEYS##')
-        if '_embedded' in data:
-            print(data['_embedded'].keys())
-            # Check the keys within each event
-            first_event = data['_embedded']['events'][0]
-            print(first_event.keys())
-        print('##first event##')
-        first_event = data['_embedded']['events'][0]
-        print(json.dumps(first_event, indent=4))
-        print('###Normalized###')
-        df_flattened = pd.json_normalize(data, sep='_')
-        print(df_flattened)
-        print(df_flattened.columns)
-        print('###END###')
 
         # Check if there are any events in the response
         if '_embedded' not in data or 'events' not in data['_embedded']:
@@ -116,17 +98,7 @@ def events_to_dataframe(events):
 
 
 if __name__ == "__main__":
-    # Fetch all events for the US with pagination
     events_data = fetch_events()
-    
-    # Convert the events to a Pandas DataFrame
     events_df = events_to_dataframe(events_data)
-    
-    # Display the first few rows of the DataFrame
-    print(events_df.head())
-    print(events_df)
-    
-    
-    # Optionally, save the DataFrame to a CSV file
-#    events_df.to_csv("us_events.csv", index=False)
- #   print("Events saved to us_events.csv")
+
+    load_snowflake(events_df, "Test Table")
