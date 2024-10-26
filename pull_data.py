@@ -59,22 +59,22 @@ def fetch_events():
     
     return all_events
 
-def events_to_dataframe(events):
-    # Create a list to store processed event data
-    event_list = []
+# def events_to_dataframe(events):
+#     # Create a list to store processed event data
+#     event_list = []
 
-    for event in events:
-        # Extract fields from each event
-        event_name = event.get('name')
-        event_date = event['dates']['start'].get('localDate')
-        event_time = event['dates']['start'].get('localTime', 'N/A')  
-        venue_name = event['_embedded']['venues'][0].get('name')
+#     for event in events:
+#         # Extract fields from each event
+#         event_name = event.get('name')
+#         event_date = event['dates']['start'].get('localDate')
+#         event_time = event['dates']['start'].get('localTime', 'N/A')  
+#         venue_name = event['_embedded']['venues'][0].get('name')
 
-        event_list.append([event_name, event_date, event_time, venue_name])
+#         event_list.append([event_name, event_date, event_time, venue_name])
 
-    # Convert the list to a DataFrame
-    df = pd.DataFrame(event_list, columns=['Event Name', 'Date', 'Time', 'Venue'])
-    return df
+#     # Convert the list to a DataFrame
+#     df = pd.DataFrame(event_list, columns=['Event Name', 'Date', 'Time', 'Venue'])
+#     return df
 
 
 # Puts all fields into DF from JSON
@@ -82,10 +82,3 @@ def events_to_dataframe_allCol(events):
     df = pd.json_normalize(events, sep='_')
 
     return df
-
-
-if __name__ == "__main__":
-    events_data = fetch_events()
-    events_df = events_to_dataframe_allCol(events_data)
-
-    load_snowflake(events_df, "Events")
