@@ -1,5 +1,16 @@
 import pandas as pd
 
+def init_drop(df: pd.DataFrame):
+
+    drop_cols = [
+        'images',
+        'locale',
+        'test'
+    ]
+
+    df = df.drop(columns=drop_cols, errors = 'ignore')
+
+    return df
 
 def transform_data(df: pd.DataFrame):
     
