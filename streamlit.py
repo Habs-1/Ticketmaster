@@ -1,8 +1,10 @@
 from dotenv import load_dotenv
 import streamlit as st
 import snowflake.connector
+import pandas as pd
 import os
 import warnings
+
 
 warnings.filterwarnings("ignore", message="Bad owner or permissions on .*connections.toml")
 
@@ -23,6 +25,13 @@ conn = snowflake.connector.connect(
     schema = os.getenv('SNOWFLAKE_SCHEMA')
 )
 
+def query_snowflake(query: str) -> pd.DataFrame:
+
+    df = pd.read_sql(query, conn)
+    conn.close()
+    return df
+
+
 # Use an interactive slider to get user input
 hifives_val = st.slider(
     "Number of anything from 0-90",
@@ -32,3 +41,8 @@ hifives_val = st.slider(
     help="Use this slider to slide   to different values",
 )
 
+query = "SELECT * FROM Events"  
+data_df = query_snowflake(query)
+
+st.write("Sample Query from Snowflake:")
+st.dataframe(data_df)
