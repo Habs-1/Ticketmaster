@@ -2,7 +2,8 @@ import os
 import pandas as pd
 from sqlalchemy import create_engine
 from dotenv import load_dotenv
-import warnings 
+import streamlit as st
+import warnings
 
 warnings.filterwarnings("ignore", message="Bad owner or permissions on .*connections.toml")
 
@@ -25,8 +26,12 @@ def query_snowflake(query: str) -> pd.DataFrame:
     return df
 
 def get_unique_values(column_name: str) -> list:
-    query = f"SELECT DISTINCT {column_name} FROM Events;"
+    query = f"""SELECT DISTINCT "{column_name}" FROM "Events";"""
     engine = get_snowflake_engine()
     with engine.connect() as connection:
         result = pd.read_sql(query, connection)
-    return result[column_name].dropna().unique().tolist()
+    if column_name in result.columns:
+        return result[column_name].dropna().unique().tolist()
+    else:
+        st.warning(f"Column '{column_name}' not found in the result.")
+        return []
