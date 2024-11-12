@@ -6,3 +6,6 @@
 
     `pip freeze > requirements.txt`
     
+## Run Streamlit in VS Code
+
+    `streamlit run streamlit.py`
