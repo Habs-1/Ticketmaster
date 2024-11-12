@@ -32,7 +32,7 @@ def run_pipeline():
     
     print("###Loading Events###")
     load_snowflake(df_clean, "Events")
-    df_clean.to_csv("test.csv")
+    # df_clean.to_csv("test.csv")
     num_events = len(df_clean)
     print(f"{num_events} events")
     print("###Events Loaded###")
