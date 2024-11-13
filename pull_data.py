@@ -82,3 +82,15 @@ def events_to_dataframe_allCol(events):
     df = pd.json_normalize(events, sep='_')
 
     return df
+
+# Below for checking existing events so we only load new events. 
+# I am deciding to not do this incase there are changes. Will continue to load all data and use replace for existing IDs
+#
+# def get_existing_events(engine) -> pd.DataFrame:
+#     query = f"""SELECT id FROM "Events";"""
+#     with engine.connect() as connection:
+#         existing_events = pd.read_sql(query, connection)
+#     return existing_events
+
+# def filter_new_events(df: pd.DataFrame, existing_ids: pd.Series) -> pd.DataFrame:
+#     return df[~df['id'].isin(existing_ids)]
