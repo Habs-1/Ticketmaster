@@ -17,6 +17,7 @@ def transform_data(df: pd.DataFrame):
     # contains incompatible info for snowflake toSQL function, information does not seem too important besides maybe aliases. 
     # might circle back to fixing these columns at a later date. 
     exclude = [
+    'priceRanges',
     '_embedded_venues_markets',
     '_embedded_venues_dmas',
     '_embedded_venues_images',
@@ -51,5 +52,11 @@ def flatten_nested_json(df, prefix_sep='_'):
         else:
             # If the column is not nested, add it directly
             flattened_df[column] = df[column]
-
+    
+    #classifications_expanded = pd.json_normalize(df['classifications'].dropna().explode())
+    # Rename columns to be more descriptive, e.g., add "classifications_" prefix
+   # classifications_expanded.columns = [f'classifications_{col}' for col in classifications_expanded.columns]
+    # Drop the original classifications column and join the expanded data
+   # flattened_df = flattened_df.drop(columns=['classifications']).join(classifications_expanded, how='left')
+    
     return flattened_df

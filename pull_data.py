@@ -5,58 +5,94 @@ import os
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from load_snowflake import load_snowflake
-from urllib.parse import quote_plus 
+from urllib.parse import quote_plus
+from datetime import datetime, timedelta
 
 load_dotenv()
 
+def date_range(start_date, days=4):
+    # Helper function to generate the start and end dates in ISO format for the time period input
+    end_date = start_date + timedelta(days=days)
+    return start_date.strftime('%Y-%m-%dT00:00:00Z'), end_date.strftime('%Y-%m-%dT23:59:59Z')
+
+
 def fetch_events():
     api_key = os.getenv('API_KEY')
-    
     url = 'https://app.ticketmaster.com/discovery/v2/events.json'
-    
-    params = {
-        'apikey': api_key,
-        'countryCode': 'US',                      # Limit results to the US
-        'startDateTime': '2024-12-01T00:00:00Z',  # Start date
-        ### Deep paging issues over 1000 items, limiting to 1 month for now. will need to add batching
-        'endDateTime': '2024-12-31T23:59:59Z',    # End date
-        'size': 200,                              # Max events per page
-        'page': 0,                                # Start at page 0
-        'sort': 'date,asc'                        # Sort by date ascending
-    }
-    
     all_events = []  # To store all events data
+    start_date = datetime(2024, 11, 1)  # Start date
+    end_limit = datetime(2025, 1, 31)  # End date limit
+       
+    while start_date < end_limit:
+        start_date_str, end_date_str = date_range(start_date, days=4)
     
-    while True:
-        response = requests.get(url, params=params)
-        
+        initial_params = {
+            'apikey': api_key,
+            'countryCode': 'US',                      # Limit results to the US
+            'startDateTime': start_date_str,          # Start of the range in UTC
+            'endDateTime': end_date_str,              # End of the range in UTC
+            'size': 200,                              # Max events per page
+            'page': 0,                                
+            'sort': 'date,asc',                       # Sort by date ascending
+            '&source=': 'Ticketmaster'                # Ticketmaster source only. no resale  
+        }
+
+        response = requests.get(url, params=initial_params)
+        print(f"Request URL: {response.url}")
+
         # Check if the request was successful
         if response.status_code != 200:
             print(f"Error: Unable to fetch data (status code {response.status_code})")
             break
         
         data = response.json()
+        total_events = data.get('page', {}).get('totalElements', 0)
+        print(f"{total_events} total events for {start_date_str} thru {end_date_str}")
 
-        # Check if there are any events in the response
-        if '_embedded' not in data or 'events' not in data['_embedded']:
-            print("No more events found.")
-            break
-        
-        # Extract events from the current page
-        events = data['_embedded']['events']
-        all_events.extend(events)
-        
-        # Print the number of events fetched on this page
-        print(f"Fetched {len(events)} events on page {params['page']}")
-        
-        # Check if there are more pages
-        if params['page'] >= data['page']['totalPages'] - 1:
-            print("All pages have been fetched.")
-            break # breaks the while True when out of pages
-        
-        # Increment to the next page
-        params['page'] += 1
-    
+        num_splits = max((total_events // 1000) + 1, 1)
+        print(f"Total events for {start_date.date()} to {(start_date + timedelta(days=2)).date()}: {total_events}. Splitting into {num_splits} periods.")
+
+        for i in range(num_splits):
+            split_start = start_date + timedelta(hours=i * (96 // num_splits))  # 96 hours in 4 days
+            split_end = split_start + timedelta(hours=(96 // num_splits) - 1, minutes=59, seconds=59)
+            split_start_str = split_start.strftime('%Y-%m-%dT%H:%M:%SZ')
+            split_end_str = split_end.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+            page = 0
+            while True:
+                params = {
+                    'apikey': api_key,
+                    'countryCode': 'US',
+                    'startDateTime': split_start_str,
+                    'endDateTime': split_end_str,
+                    'size': 200,
+                    'page': page,
+                    'sort': 'date,asc',
+                    '&source=': 'Ticketmaster'
+                }
+
+                response = requests.get(url, params=params)
+                if response.status_code != 200:
+                    print(f"Error: Unable to fetch data (status code {response.status_code})")
+                    break
+
+                data = response.json()
+                if '_embedded' not in data or 'events' not in data['_embedded']:
+                    print("No more events found.")
+                    break
+
+                events = data['_embedded']['events']
+                all_events.extend(events)
+                print(f"Fetched {len(events)} events from {split_start_str} to {split_end_str} on page {page}")
+
+                if page >= data['page']['totalPages'] - 1:
+                    print(f"All pages for {split_start_str} to {split_end_str} have been fetched.")
+                    break
+
+                page += 1
+
+        start_date += timedelta(days=4)
+
     return all_events
 
 # def events_to_dataframe(events):

@@ -4,10 +4,10 @@ from pull_data import events_to_dataframe_allCol
 from transform import flatten_nested_json
 from transform import init_drop
 from transform import transform_data
-from pull_data import get_existing_events
-from pull_data import filter_new_events
-from sqlalchemy import create_engine
-import os
+# from pull_data import get_existing_events
+# from pull_data import filter_new_events
+# from sqlalchemy import create_engine
+# import os
 from dotenv import load_dotenv
 import warnings
 
@@ -56,8 +56,8 @@ def run_pipeline():
     print("### DF Cleaned ###")
     
     print("### Loading Events ###")
-    load_snowflake(df_clean, "Events")
-    # df_clean.to_csv("test.csv")
+    #load_snowflake(df_clean, "Events")
+    df_clean.to_csv("test.csv")
     num_events = len(df_clean)
     print(f"### {num_events} Events Loaded ###")
 
