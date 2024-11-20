@@ -10,7 +10,10 @@ from datetime import datetime, timedelta
 
 load_dotenv()
 
-def date_range(start_date, days=4):
+num_days = 3
+num_hours = num_days * 24
+
+def date_range(start_date, days=num_days):
     # Helper function to generate the start and end dates in ISO format for the time period input
     end_date = start_date + timedelta(days=days)
     return start_date.strftime('%Y-%m-%dT00:00:00Z'), end_date.strftime('%Y-%m-%dT23:59:59Z')
@@ -24,7 +27,7 @@ def fetch_events():
     end_limit = datetime(2025, 1, 31)  # End date limit
        
     while start_date < end_limit:
-        start_date_str, end_date_str = date_range(start_date, days=4)
+        start_date_str, end_date_str = date_range(start_date, days=num_days)
     
         initial_params = {
             'apikey': api_key,
@@ -49,12 +52,12 @@ def fetch_events():
         total_events = data.get('page', {}).get('totalElements', 0)
         print(f"{total_events} total events for {start_date_str} thru {end_date_str}")
 
-        num_splits = max((total_events // 1000) + 1, 1)
-        print(f"Total events for {start_date.date()} to {(start_date + timedelta(days=2)).date()}: {total_events}. Splitting into {num_splits} periods.")
+        num_splits = max((total_events // 1000) + 2, 1)
+        print(f"Total events for {start_date.date()} to {(start_date + timedelta(days=num_days)).date()}: {total_events}. Splitting into {num_splits} periods.")
 
         for i in range(num_splits):
-            split_start = start_date + timedelta(hours=i * (96 // num_splits))  # 96 hours in 4 days
-            split_end = split_start + timedelta(hours=(96 // num_splits) - 1, minutes=59, seconds=59)
+            split_start = start_date + timedelta(hours=i * (num_hours // num_splits))  
+            split_end = split_start + timedelta(hours=(num_hours // num_splits) - 1, minutes=59, seconds=59)
             split_start_str = split_start.strftime('%Y-%m-%dT%H:%M:%SZ')
             split_end_str = split_end.strftime('%Y-%m-%dT%H:%M:%SZ')
 
@@ -91,7 +94,7 @@ def fetch_events():
 
                 page += 1
 
-        start_date += timedelta(days=4)
+        start_date += timedelta(days=num_days)
 
     return all_events
 
