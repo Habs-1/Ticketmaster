@@ -61,6 +61,8 @@ with tab2:
         SELECT * FROM "Events" LIMIT 1000;
         """
         full_data_df = cached_query(full_data_query)
+        num_events = len(full_data_df)
+        st.write(f"Raw Data Events: {num_events}")
         st.dataframe(full_data_df, height=500)
     except Exception as e:
         st.error(f"Error loading full dataset: {e}")
