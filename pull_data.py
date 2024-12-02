@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 
 load_dotenv()
 
-num_days = 4
+num_days = 2
 num_hours = num_days * 24
 
 def date_range(start_date, days=num_days):
@@ -23,8 +23,8 @@ def fetch_events():
     api_key = os.getenv('API_KEY')
     url = 'https://app.ticketmaster.com/discovery/v2/events.json'
     all_events = []  # To store all events data
-    start_date = datetime(2024, 12, 1)  # Start date
-    end_limit = datetime(2024, 12, 31)  # End date limit
+    start_date = datetime(2024, 12, 7)  # Start date
+    end_limit = datetime(2024, 12, 10)  # End date limit
        
     while start_date < end_limit:
         start_date_str, end_date_str = date_range(start_date, days=num_days)
@@ -123,7 +123,7 @@ def events_to_dataframe_allCol(events):
     return df
 
 # Below for checking existing events so we only load new events. 
-# I am deciding to not do this incase there are changes. Will continue to load all data and use replace for existing IDs
+# I am deciding to not do this incase there are changes in the data. Will continue to load all data and use replace for existing IDs
 #
 # def get_existing_events(engine) -> pd.DataFrame:
 #     query = f"""SELECT id FROM "Events";"""

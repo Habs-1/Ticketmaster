@@ -27,7 +27,10 @@ def transform_data(df: pd.DataFrame):
     'promoters',
     'products',
     'sales_presales',
-    'outlets'
+    'outlets',
+    '_embedded_venues_externalLinks_appDeepLink',
+    '_embedded_venues_upcomingEvents_veeps'
+
 ]    
     df = df.drop(columns=exclude, errors='ignore')
 
@@ -52,11 +55,5 @@ def flatten_nested_json(df, prefix_sep='_'):
         else:
             # If the column is not nested, add it directly
             flattened_df[column] = df[column]
-    
-    #classifications_expanded = pd.json_normalize(df['classifications'].dropna().explode())
-    # Rename columns to be more descriptive, e.g., add "classifications_" prefix
-   # classifications_expanded.columns = [f'classifications_{col}' for col in classifications_expanded.columns]
-    # Drop the original classifications column and join the expanded data
-   # flattened_df = flattened_df.drop(columns=['classifications']).join(classifications_expanded, how='left')
     
     return flattened_df
