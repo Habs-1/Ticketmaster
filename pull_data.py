@@ -98,38 +98,9 @@ def fetch_events():
 
     return all_events
 
-# def events_to_dataframe(events):
-#     # Create a list to store processed event data
-#     event_list = []
-
-#     for event in events:
-#         # Extract fields from each event
-#         event_name = event.get('name')
-#         event_date = event['dates']['start'].get('localDate')
-#         event_time = event['dates']['start'].get('localTime', 'N/A')  
-#         venue_name = event['_embedded']['venues'][0].get('name')
-
-#         event_list.append([event_name, event_date, event_time, venue_name])
-
-#     # Convert the list to a DataFrame
-#     df = pd.DataFrame(event_list, columns=['Event Name', 'Date', 'Time', 'Venue'])
-#     return df
-
 
 # Puts all fields into DF from JSON
 def events_to_dataframe_allCol(events):
     df = pd.json_normalize(events, sep='_')
 
     return df
-
-# Below for checking existing events so we only load new events. 
-# I am deciding to not do this incase there are changes in the data. Will continue to load all data and use replace for existing IDs
-#
-# def get_existing_events(engine) -> pd.DataFrame:
-#     query = f"""SELECT id FROM "Events";"""
-#     with engine.connect() as connection:
-#         existing_events = pd.read_sql(query, connection)
-#     return existing_events
-
-# def filter_new_events(df: pd.DataFrame, existing_ids: pd.Series) -> pd.DataFrame:
-#     return df[~df['id'].isin(existing_ids)]
