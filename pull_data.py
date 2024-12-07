@@ -12,7 +12,7 @@ def fetch_events():
     url = 'https://app.ticketmaster.com/discovery/v2/events.json'
     all_events = []
     start_date = datetime(2024, 12, 10)
-    end_limit = datetime(2024, 12, 15)
+    end_limit = datetime(2025, 1, 10)
 
     while start_date < end_limit:
         end_date = start_date + timedelta(days = 3)  # Adjust the date chunk interval here
