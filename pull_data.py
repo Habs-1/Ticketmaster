@@ -11,7 +11,7 @@ def fetch_events():
     api_key = os.getenv('API_KEY')
     url = 'https://app.ticketmaster.com/discovery/v2/events.json'
     all_events = []
-    start_date = datetime(2024, 12, 10)
+    start_date = datetime(2024, 12, 21)
     end_limit = datetime(2025, 1, 10)
 
     while start_date < end_limit:
@@ -27,7 +27,7 @@ def fetch_events():
     return all_events
 
 
-def fetch_split_events(api_key, url, start_date, end_date, max_events = 1000):
+def fetch_split_events(api_key, url, start_date, end_date, max_events=1000):
     all_events = []
     params = {
         'apikey': api_key,
@@ -39,7 +39,9 @@ def fetch_split_events(api_key, url, start_date, end_date, max_events = 1000):
         'sort': 'date,asc',
         '&source=': 'Ticketmaster'
     }
-    min_granularity = timedelta(seconds = 1) # timestamps within 1s of eachother are treated as the same to try to stop infinite loops in recursion
+    
+    # Minimum granularity for splitting
+    min_granularity = timedelta(seconds=10)  # Set to 10 seconds as an example
 
     response = requests.get(url, params=params)
     print(f"Request URL: {response.url}")
@@ -53,18 +55,16 @@ def fetch_split_events(api_key, url, start_date, end_date, max_events = 1000):
 
     if total_events > max_events:
         print(f"{total_events} total events for {start_date} to {end_date}. Splitting the period.")
-        
-        if end_date - start_date <= min_granularity:
+
+        # Check if the time range is too small to split further
+        if (end_date - start_date) <= min_granularity:
             print(f"Cannot split further: {start_date} to {end_date} has reached minimum granularity.")
-            return []
+            print(f"Too many events in a very short time range. Skipping this range.")
+            return []  # Avoid infinite recursion
 
         # Split the range into two and recurse
         midpoint = start_date + (end_date - start_date) / 2
         print(f"Splitting period {start_date} to {end_date} into {start_date} to {midpoint} and {midpoint} to {end_date}")
-
-        if midpoint <= start_date or midpoint >= end_date:
-            print(f"Cannot split further: {start_date} to {end_date} has reached minimum granularity.")
-            return []
 
         all_events.extend(fetch_split_events(api_key, url, start_date, midpoint, max_events))
         all_events.extend(fetch_split_events(api_key, url, midpoint, end_date, max_events))
