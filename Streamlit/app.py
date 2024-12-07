@@ -35,7 +35,7 @@ with tab1:
         if city:
             query += f""" AND _embedded_venues_city_name ilike '{city}%'"""         #city filtering (caps insensitive and wildcard ending)
         
-        query += " LIMIT 1000;"
+        # query += " LIMIT 1000;"
         return query
 
     # Run query if the refresh button is clicked
@@ -58,7 +58,7 @@ with tab2:
     st.header("Raw Dataset View")
     try:
         full_data_query = f"""
-        SELECT * FROM "Events" LIMIT 1000;
+        SELECT * FROM "Events";
         """
         full_data_df = cached_query(full_data_query)
         num_events = len(full_data_df)
