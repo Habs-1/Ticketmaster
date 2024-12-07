@@ -49,15 +49,22 @@ def fetch_split_events(api_key, url, start_date, end_date, max_events = 1000):
 
     data = response.json()
     total_events = data.get('page', {}).get('totalElements', 0)
-    print(f"{total_events} total events for {start_date} to {end_date}")
 
     if total_events > max_events:
+        print(f"{total_events} total events for {start_date} to {end_date}. Splitting the period.")
+        
         # Split the range into two and recurse
         midpoint = start_date + (end_date - start_date) / 2
         print(f"Splitting period {start_date} to {end_date} into {start_date} to {midpoint} and {midpoint} to {end_date}")
+
+        if midpoint == start_date or midpoint == end_date:
+            print(f"Cannot split further: {start_date} to {end_date} has reached minimum granularity.")
+            return []
+
         all_events.extend(fetch_split_events(api_key, url, start_date, midpoint, max_events))
         all_events.extend(fetch_split_events(api_key, url, midpoint, end_date, max_events))
     else:
+        print(f"{total_events} total events for {start_date} to {end_date}")
         # Fetch events for this period
         page = 0
         while True:
