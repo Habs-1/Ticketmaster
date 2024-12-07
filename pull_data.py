@@ -1,102 +1,89 @@
 import requests
 import pandas as pd
-import json
 import os
 from dotenv import load_dotenv
-from sqlalchemy import create_engine
-from load_snowflake import load_snowflake
-from urllib.parse import quote_plus
 from datetime import datetime, timedelta
 
 load_dotenv()
-
-num_days = 2
-num_hours = num_days * 24
-
-def date_range(start_date, days=num_days):
-    # Helper function to generate the start and end dates in ISO format for the time period input
-    end_date = start_date + timedelta(days=days)
-    return start_date.strftime('%Y-%m-%dT00:00:00Z'), end_date.strftime('%Y-%m-%dT23:59:59Z')
 
 
 def fetch_events():
     api_key = os.getenv('API_KEY')
     url = 'https://app.ticketmaster.com/discovery/v2/events.json'
-    all_events = []  # To store all events data
-    start_date = datetime(2024, 12, 7)  # Start date
-    end_limit = datetime(2024, 12, 10)  # End date limit
-       
+    all_events = []
+    start_date = datetime(2024, 12, 10)
+    end_limit = datetime(2024, 12, 15)
+
     while start_date < end_limit:
-        start_date_str, end_date_str = date_range(start_date, days=num_days)
-    
-        initial_params = {
-            'apikey': api_key,
-            'countryCode': 'US',                      # Limit results to the US
-            'startDateTime': start_date_str,          # Start of the range in UTC
-            'endDateTime': end_date_str,              # End of the range in UTC
-            'size': 200,                              # Max events per page
-            'page': 0,                                
-            'sort': 'date,asc',                       # Sort by date ascending
-            '&source=': 'Ticketmaster'                # Ticketmaster source only. no resale  
-        }
+        end_date = start_date + timedelta(days = 3)  # Adjust the date chunk interval here
+        if end_date > end_limit:
+            end_date = end_limit
 
-        response = requests.get(url, params=initial_params)
-        print(f"Request URL: {response.url}")
+        print(f"Fetching events from {start_date} to {end_date}")
+        all_events.extend(fetch_split_events(api_key, url, start_date, end_date))
 
-        # Check if the request was successful
-        if response.status_code != 200:
-            print(f"Error: Unable to fetch data (status code {response.status_code})")
-            break
-        
-        data = response.json()
-        total_events = data.get('page', {}).get('totalElements', 0)
-        print(f"{total_events} total events for {start_date_str} thru {end_date_str}")
-
-        num_splits = max((total_events // 1000) + 2, 1)
-        print(f"Total events for {start_date.date()} to {(start_date + timedelta(days=num_days)).date()}: {total_events}. Splitting into {num_splits} periods.")
-
-        for i in range(num_splits):
-            split_start = start_date + timedelta(hours=i * (num_hours // num_splits))  
-            split_end = split_start + timedelta(hours=(num_hours // num_splits) - 1, minutes=59, seconds=59)
-            split_start_str = split_start.strftime('%Y-%m-%dT%H:%M:%SZ')
-            split_end_str = split_end.strftime('%Y-%m-%dT%H:%M:%SZ')
-
-            page = 0
-            while True:
-                params = {
-                    'apikey': api_key,
-                    'countryCode': 'US',
-                    'startDateTime': split_start_str,
-                    'endDateTime': split_end_str,
-                    'size': 200,
-                    'page': page,
-                    'sort': 'date,asc',
-                    '&source=': 'Ticketmaster'
-                }
-
-                response = requests.get(url, params=params)
-                if response.status_code != 200:
-                    print(f"Error: Unable to fetch data (status code {response.status_code})")
-                    break
-
-                data = response.json()
-                if '_embedded' not in data or 'events' not in data['_embedded']:
-                    print("No more events found.")
-                    break
-
-                events = data['_embedded']['events']
-                all_events.extend(events)
-                print(f"Fetched {len(events)} events from {split_start_str} to {split_end_str} on page {page}")
-
-                if page >= data['page']['totalPages'] - 1:
-                    print(f"All pages for {split_start_str} to {split_end_str} have been fetched.")
-                    break
-
-                page += 1
-
-        start_date += timedelta(days=num_days)
+        start_date = end_date + timedelta(days=1)
 
     return all_events
+
+
+def fetch_split_events(api_key, url, start_date, end_date, max_events = 1000):
+    all_events = []
+    params = {
+        'apikey': api_key,
+        'countryCode': 'US',
+        'startDateTime': start_date.strftime('%Y-%m-%dT%H:%M:%SZ'),
+        'endDateTime': end_date.strftime('%Y-%m-%dT%H:%M:%SZ'),
+        'size': 200,
+        'page': 0,
+        'sort': 'date,asc',
+        '&source=': 'Ticketmaster'
+    }
+
+    response = requests.get(url, params=params)
+    print(f"Request URL: {response.url}")
+
+    if response.status_code != 200:
+        print(f"Error: Unable to fetch data (status code {response.status_code})")
+        return []
+
+    data = response.json()
+    total_events = data.get('page', {}).get('totalElements', 0)
+    print(f"{total_events} total events for {start_date} to {end_date}")
+
+    if total_events > max_events:
+        # Split the range into two and recurse
+        midpoint = start_date + (end_date - start_date) / 2
+        print(f"Splitting period {start_date} to {end_date} into {start_date} to {midpoint} and {midpoint} to {end_date}")
+        all_events.extend(fetch_split_events(api_key, url, start_date, midpoint, max_events))
+        all_events.extend(fetch_split_events(api_key, url, midpoint, end_date, max_events))
+    else:
+        # Fetch events for this period
+        page = 0
+        while True:
+            params['page'] = page
+            response = requests.get(url, params=params)
+            if response.status_code != 200:
+                print(f"Error: Unable to fetch data (status code {response.status_code})")
+                break
+
+            data = response.json()
+            if '_embedded' not in data or 'events' not in data['_embedded']:
+                print("No more events found.")
+                break
+
+            events = data['_embedded']['events']
+            all_events.extend(events)
+            print(f"Fetched {len(events)} events from {start_date} to {end_date} on page {page}")
+
+            if page >= data['page']['totalPages'] - 1:
+                print(f"All pages for {start_date} to {end_date} have been fetched.")
+                break
+
+            page += 1
+
+    return all_events
+
 
 
 # Puts all fields into DF from JSON
