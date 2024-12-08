@@ -8,7 +8,7 @@ st.title("Ticketmaster Event Visualization")
 st.write("Brandon Habschied bjh3420@rit.edu")
 
 # Sidebar filters and refresh button
-start_date, end_date, event_type, state, city, refresh_button = sidebar_controls()
+start_date, end_date, event_type, state, city,  min_price, max_price, refresh_button = sidebar_controls()
 
 # Tabs for the app and data reference
 tab1, tab2 = st.tabs(["Event Dashboard", "Raw Dataset"])
@@ -23,17 +23,23 @@ with tab1:
     st.header("Filtered Events")
         
     # Dynamic SQL Query Construction
-    def build_query(start_date, end_date, event_type, state, city):
+    def build_query(start_date, end_date, event_type, state, city, min_price, max_price):
         query = f"""
         SELECT * FROM "Events"
         WHERE "dates_start_localDate" BETWEEN '{start_date}' AND '{end_date}'"""    #start date filtering
         
-        if event_type != "All":
-            query += f""" AND "CLASSIFICATIONS_SEGMENT_NAME" = '{event_type}'"""    #event type filtering
+        if event_type and "All" not in event_type:
+            segment_list = "', '".join(event_type)
+            query += f""" AND "CLASSIFICATIONS_SEGMENT_NAME" IN ('{segment_list}') """
         if state:
             query += f""" AND _embedded_venues_state_name ilike '{state}%'"""       #city filtering (caps insensitive and wildcard ending)
         if city:
             query += f""" AND _embedded_venues_city_name ilike '{city}%'"""         #city filtering (caps insensitive and wildcard ending)
+        if min_price != 0:
+            query += f""" AND "priceRanges_min" >= {min_price}"""                      # Minimum price filter
+        else:
+            query += f""" AND "priceRanges_min" IS NULL OR "priceRanges_min" >= {min_price}""" 
+        query += f""" AND "priceRanges_max" <= {max_price}"""                      # Maximum price filter
         
         # query += " LIMIT 1000;"
         return query
@@ -41,16 +47,14 @@ with tab1:
     # Run query if the refresh button is clicked
     if refresh_button:
         try:
-            query = build_query(start_date, end_date, event_type, state, city)
+            query = build_query(start_date, end_date, event_type, state, city, min_price, max_price)
             data_df = cached_query(query)
             num_events = len(data_df)
             st.write(f"Filtered Events: {num_events}")
-            st.dataframe(data_df, height=500)
+            st.dataframe(data_df, height = 500)
         except Exception as e:
             st.error(f"Error loading filtered data: {e}")
             st.write("Please check your filters or query parameters.")
-
-
 
 
 # Tab 2: Raw Dataset for Reference
