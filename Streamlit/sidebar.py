@@ -27,8 +27,10 @@ def sidebar_controls():
         help="Setting minimum price to $0 will include all events without a listed price."
     )
    
+    view_mode = st.sidebar.radio("Select View Mode", ["Full View", "Minimal View"], index=0, help="Minimal View will only show the most relevant columns.")
+    
 
     refresh_button = st.sidebar.button("Refresh Data")
     
-    return start_date, end_date, event_type, state, city, min_price, max_price, refresh_button
+    return start_date, end_date, event_type, state, city, min_price, max_price, view_mode, refresh_button
 

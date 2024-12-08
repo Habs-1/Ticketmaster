@@ -4,11 +4,17 @@ from sidebar import sidebar_controls
 import pandas as pd
 
 # Title and info
+
+st.set_page_config(layout="wide")
 st.title("Ticketmaster Event Visualization")
 st.write("Brandon Habschied bjh3420@rit.edu")
 
+minimal_view = ["name", "url", "classifications_segment_name", "classifications_genre_name", "priceRanges_min", "priceRanges_max", 
+        "dates_start_localDate", "dates_start_localTime", "_embedded_venues_name", "_embedded_venues_state_name", 
+        "_embedded_venues_city_name"]
+
 # Sidebar filters and refresh button
-start_date, end_date, event_type, state, city,  min_price, max_price, refresh_button = sidebar_controls()
+start_date, end_date, event_type, state, city,  min_price, max_price, view_mode, refresh_button = sidebar_controls()
 
 # Tabs for the app and data reference
 tab1, tab2 = st.tabs(["Event Dashboard", "Raw Dataset"])
@@ -51,7 +57,11 @@ with tab1:
             data_df = cached_query(query)
             num_events = len(data_df)
             st.write(f"Filtered Events: {num_events}")
-            st.dataframe(data_df, height = 500)
+            if view_mode == "Full View":
+                st.dataframe(data_df, height = 500, use_container_width=True)
+            else:
+                st.subheader("Minimal View")
+                st.dataframe(data_df[minimal_view])
         except Exception as e:
             st.error(f"Error loading filtered data: {e}")
             st.write("Please check your filters or query parameters.")
@@ -67,6 +77,6 @@ with tab2:
         full_data_df = cached_query(full_data_query)
         num_events = len(full_data_df)
         st.write(f"Raw Data Events: {num_events}")
-        st.dataframe(full_data_df, height=500)
+        st.dataframe(full_data_df, height=500, use_container_width=True)
     except Exception as e:
         st.error(f"Error loading full dataset: {e}")
