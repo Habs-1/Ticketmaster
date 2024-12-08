@@ -6,7 +6,7 @@ import pandas as pd
 # Title and info
 
 st.set_page_config(layout="wide")
-st.title("Ticketmaster Event Visualization")
+st.title("Ticketmaster Event Data Pipeline Explorer")
 st.write("Brandon Habschied bjh3420@rit.edu")
 
 minimal_view = ["name", "url", "classifications_segment_name", "classifications_genre_name", "priceRanges_min", "priceRanges_max", 
