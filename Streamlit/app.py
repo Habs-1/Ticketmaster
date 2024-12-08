@@ -44,7 +44,7 @@ with tab1:
         if min_price != 0:
             query += f""" AND "priceRanges_min" >= {min_price}"""                      # Minimum price filter
         else:
-            query += f""" AND "priceRanges_min" IS NULL OR "priceRanges_min" >= {min_price}""" 
+            query += f""" AND ("priceRanges_min" IS NULL OR "priceRanges_min" >= {min_price})""" 
         query += f""" AND "priceRanges_max" <= {max_price}"""                      # Maximum price filter
         
         # query += " LIMIT 1000;"
@@ -58,10 +58,12 @@ with tab1:
             num_events = len(data_df)
             st.write(f"Filtered Events: {num_events}")
             if view_mode == "Full View":
-                st.dataframe(data_df, height = 500, use_container_width=True)
+                st.dataframe(data_df, height = 500)
             else:
                 st.subheader("Minimal View")
                 st.dataframe(data_df[minimal_view])
+            st.write("Generated Query: (for testing purposes)")
+            st.write(query)
         except Exception as e:
             st.error(f"Error loading filtered data: {e}")
             st.write("Please check your filters or query parameters.")
