@@ -45,7 +45,9 @@ with tab1:
             query += f""" AND "priceRanges_min" >= {min_price}"""                      # Minimum price filter
         else:
             query += f""" AND ("priceRanges_min" IS NULL OR "priceRanges_min" >= {min_price})""" 
-        query += f""" AND "priceRanges_max" <= {max_price}"""                      # Maximum price filter
+        if max_price != 1000:
+            query += f""" AND "priceRanges_max" <= {max_price}"""                      # Minimum price filter
+        
         
         # query += " LIMIT 1000;"
         return query
